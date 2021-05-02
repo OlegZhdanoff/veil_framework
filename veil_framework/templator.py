@@ -18,9 +18,3 @@ def render(template_name, folder=TEMPLATE_DIR, **kwargs):
             template_str = f.read()
         template = Environment(loader=FileSystemLoader(BASE_DIR / folder)).from_string(template_str)
         return template.render(**kwargs)
-
-        # with open(file_path, encoding='utf-8') as f:
-        #     # create Template object from jinja2
-        #     template = Template(f.read())
-        # # render template
-        # return template.render(**kwargs)
