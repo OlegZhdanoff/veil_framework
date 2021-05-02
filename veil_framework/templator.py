@@ -11,7 +11,6 @@ def render(template_name, folder=TEMPLATE_DIR, **kwargs):
     :return:
     """
     file_path = BASE_DIR / folder / template_name
-    # file_path = os.path.join(folder, template_name)
     if file_path.exists():
         # open template file
         with open(file_path, encoding='utf-8') as f:
