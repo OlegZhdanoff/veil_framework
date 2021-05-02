@@ -18,3 +18,5 @@ def render(template_name, folder=TEMPLATE_DIR, **kwargs):
             template_str = f.read()
         template = Environment(loader=FileSystemLoader(BASE_DIR / folder)).from_string(template_str)
         return template.render(**kwargs)
+    else:
+        return b'404 PAGE Not Found'
