@@ -1,5 +1,7 @@
 import quopri
 
+from veil_framework.requests import PostRequests, GetRequests
+
 
 class PageNotFound404:
     def __call__(self, request):
@@ -7,8 +9,6 @@ class PageNotFound404:
 
 
 class Framework:
-
-    """Класс Framework - основа фреймворка"""
 
     def __init__(self, routes_obj, fronts_obj):
         self.routes_lst = routes_obj
@@ -21,12 +21,26 @@ class Framework:
         if not path.endswith('/'):
             path = f'{path}/'
 
+        request = {}
+        method = environ['REQUEST_METHOD']
+        request['method'] = method
+
+        if method == 'POST':
+            data = PostRequests().get_request_params(environ)
+            request['data'] = data
+            print(f'Нам пришёл post-запрос: {Framework.decode_value(data)}')
+        if method == 'GET':
+            request_params = GetRequests().get_request_params(environ)
+            request['request_params'] = request_params
+            if request_params:
+                print(f'Нам пришли GET-параметры: {request_params}')
+
         # search for page controller
         if path in self.routes_lst:
             view = self.routes_lst[path]
         else:
             view = PageNotFound404()
-        request = {}
+
         # fill dict request
         # front controller
         for front in self.fronts_lst:

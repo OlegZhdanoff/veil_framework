@@ -15,3 +15,8 @@ class About:
 class Registration:
     def __call__(self, request):
         return '200 OK', render('registration.html', date=request.get('date', None))
+
+
+class Feedback:
+    def __call__(self, request):
+        return '200 OK', render('feedback.html', date=request.get('date', None))
