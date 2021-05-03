@@ -1,6 +1,10 @@
 import quopri
 
+from veil_framework.log.log_config import log_config, log_default
 from veil_framework.requests import PostRequests, GetRequests
+
+
+logger = log_config('main', 'framework.log')
 
 
 class PageNotFound404:
@@ -28,12 +32,14 @@ class Framework:
         if method == 'POST':
             data = PostRequests().get_request_params(environ)
             request['data'] = data
-            print(f'Нам пришёл post-запрос: {Framework.decode_value(data)}')
+            # print(f'POST request: {Framework.decode_value(data)}')
+            logger.info(f'POST request: {Framework.decode_value(data)}')
         if method == 'GET':
             request_params = GetRequests().get_request_params(environ)
             request['request_params'] = request_params
             if request_params:
-                print(f'Нам пришли GET-параметры: {request_params}')
+                # print(f'GET request: {request_params}')
+                logger.info(f'GET request: {request_params}')
 
         # search for page controller
         if path in self.routes_lst:
