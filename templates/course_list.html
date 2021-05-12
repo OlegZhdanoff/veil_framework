@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}
+	{{ super() }}
+	- Список курсов
+{% endblock %}
+{% block content %}
+    <div>
+        <a href="/create-course/?id={{id}}">Создать новый курс</a>
+        <br>
+        <h1>Список курсов для категории "{{name}}"</h1>
+        {% for item in objects_list %}
+        <li>
+            {{item.name}} <span><a href="/copy-course/?name={{item.name}}&id={{id}}">скопировать</a></span>
+        </li>
+        {% endfor %}
+    </div>
+{% endblock %}
