@@ -1,26 +1,33 @@
 import copy
 import quopri
 
+from patterns.behavioral_patterns import Subject
 from veil_framework.log.log_config import log_config
 
 
 class User:
 
-    def __init__(self, login='', password=''):
-        self.login = login
+    def __init__(self, name='', password=''):
+        self.name = name
         self.password = password
 
 
 class Teacher(User):
-    pass
+    def __init__(self, name):
+        self.courses = []
+        super().__init__(name=name)
 
 
 class Student(User):
-    pass
+    def __init__(self, name):
+        self.courses = []
+        super().__init__(name=name)
 
 
 class Methodist(User):
-    pass
+    def __init__(self, name):
+        self.courses = []
+        super().__init__(name=name)
 
 
 class Admin(User):
@@ -37,9 +44,9 @@ class UserFactory:
 
     # порождающий паттерн Фабричный метод
     @classmethod
-    def create(cls, type_):
+    def create(cls, type_, name):
         if type_ in cls.types:
-            return cls.types[type_]()
+            return cls.types[type_](name)
         else:
             raise TypeError(f'wrong user type {type_}')
 
@@ -51,12 +58,29 @@ class CoursePrototype:
         return copy.deepcopy(self)
 
 
-class Course(CoursePrototype):
+class Course(CoursePrototype, Subject):
 
     def __init__(self, name, category):
         self.name = name
         self.category = category
         self.category.courses.append(self)
+        self.students = []
+        self.teachers = []
+        self.methodists = []
+        super().__init__()
+
+    def __getitem__(self, item):
+        return self.students[item]
+
+    def add_student(self, student: Student):
+        self.students.append(student)
+        student.courses.append(self)
+        self.notify(student)
+
+    def add_teacher(self, teacher: Teacher):
+        self.teachers.append(teacher)
+        teacher.courses.append(self)
+        self.notify(teacher)
 
     def change_category(self, category):
         try:
@@ -65,11 +89,6 @@ class Course(CoursePrototype):
             pass
         self.category = category
         self.category.courses.append(self)
-        # for i, course in enumerate(self.category.courses):
-            # if course.name == self.name:
-            #     lst = []
-            #     lst.remove()
-            #     self.category.courses.
 
 
 # Интерактивный курс
@@ -136,8 +155,8 @@ class Engine:
         self.categories = []
 
     @staticmethod
-    def create_user(type_):
-        return UserFactory.create(type_)
+    def create_user(type_, name):
+        return UserFactory.create(type_, name)
 
     @staticmethod
     def create_category(name, category=None):
@@ -159,6 +178,16 @@ class Engine:
             if item.name == name:
                 return item
         return None
+
+    def get_student(self, name) -> Student:
+        for item in self.students:
+            if item.name == name:
+                return item
+
+    def get_teacher(self, name) -> Teacher:
+        for item in self.teachers:
+            if item.name == name:
+                return item
 
     @staticmethod
     def decode_value(val):
@@ -191,10 +220,11 @@ class SingletonByName(type):
 
 class Logger(metaclass=SingletonByName):
 
-    def __init__(self, name, filename):
+    def __init__(self, name, filename='', console=True):
         self.name = name
         self.filename = filename
-        self.logger = log_config(name, filename)
+        self.console = console
+        self.logger = log_config(name, filename, console)
 
     def info(self, msg):
         self.logger.info(msg)

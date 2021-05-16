@@ -4,7 +4,7 @@ from veil_framework.log.log_config import log_config, log_default
 from veil_framework.requests import PostRequests, GetRequests
 
 
-logger = log_config('main', 'framework.log')
+logger = log_config('main', 'framework.log', console=True)
 
 
 class PageNotFound404:

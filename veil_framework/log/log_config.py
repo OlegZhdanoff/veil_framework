@@ -9,20 +9,23 @@ def proc(logger, method_name, event_dict):
     return event_dict
 
 
-configure_logging(proc)
+# configure_logging(proc)
 
 
-def log_config(logger_name, filename):
+def log_config(logger_name, filename, console):
     """
     configure logger with specific data
     :param logger_name: name of logger
     :param filename: file to store logging information
+    :param console: flag to show info in console
     :return: logger instance
     """
-    logger = structlog.get_logger(logger_name)
+    configure_logging(proc, console)
 
-    file_handler = TimedRotatingFileHandler(filename, when='D', interval=1, encoding='utf-8')
-    logger.addHandler(file_handler)
+    logger = structlog.get_logger(logger_name)
+    if filename:
+        file_handler = TimedRotatingFileHandler(filename, when='D', interval=1, encoding='utf-8')
+        logger.addHandler(file_handler)
     return logger
 
 

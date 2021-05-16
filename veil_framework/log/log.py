@@ -3,12 +3,14 @@ import logging
 import structlog
 
 
-def configure_logging(processor, log_level='DEBUG'):
+def configure_logging(processor, console, log_level='DEBUG'):
     """
     configure logging for application
     :param processor: processor for logger
+    :param console: flag to show info in console
     :param log_level: level for logging
     """
+    log_to_stream = 'logging.StreamHandler' if console else 'logging.NullHandler'
     logging.config.dictConfig({
         'version': 1,
         'disable_existing_loggers': False,
@@ -28,7 +30,8 @@ def configure_logging(processor, log_level='DEBUG'):
         'handlers': {
             'default': {
                 'level': log_level,
-                'class': 'logging.StreamHandler',
+                'class': log_to_stream,
+                # 'class': 'logging.StreamHandler',
                 # 'class': 'logging.NullHandler',
                 'formatter': 'formater',
             },
