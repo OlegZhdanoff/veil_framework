@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}
+	{{ super() }}
+	- Изменить данные студента
+{% endblock %}
+{% block content %}
+    <div>
+		<li>
+			<a href="/student-list/">Список студентов</a>
+		</li>
+		<li>
+			<a href="/add-student/">Добавить студента на курс</a>
+		</li>
+	</div>
+    <div>
+        <h1>Изменить студента</h1>
+        <form method="post">
+            <input type="hidden" name="id" value="{{item.id}}">
+            <label for="text" class="title">Логин студента:</label>
+            <input type="text" name="name" value="{{item.name}}"><br><br>
+            <label for="password" class="title">Пароль:</label>
+            <input type="password" name="password" value="{{item.password}}"><br><br>
+            <button type="submit">Сохранить</button>
+            <button type="reset">Отмена</button>
+        </form>
+    </div>
+{% endblock %}

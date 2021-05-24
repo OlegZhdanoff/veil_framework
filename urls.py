@@ -1,6 +1,6 @@
 from fronts import date_front
-from views import Index, About, Registration, Feedback, StudyPrograms, CoursesList, CreateCourse, CreateCategory, \
-    CategoryList, CopyCourse
+# from views import Index, About, Registration, Feedback, StudyPrograms, CoursesList, CreateCourse, CreateCategory, \
+#     CategoryList, CopyCourse
 
 fronts = [date_front, ]
 

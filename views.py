@@ -1,9 +1,10 @@
 from icecream import ic
 from datetime import date
 
-from patterns.behavioral_patterns import BaseSerializer, ListView, CreateView, EmailNotifier, SmsNotifier
+from patterns.architectural_system_pattern_unit_of_work import UnitOfWork
+from patterns.behavioral_patterns import BaseSerializer, ListView, CreateView, EmailNotifier, SmsNotifier, UpdateView
 from veil_framework.templator import render
-from patterns.сreational_patterns import Engine, Logger
+from patterns.сreational_patterns import Engine, Logger, MapperRegistry, Student, Mapper
 from patterns.structural_patterns import AppRoute, Debug
 
 site = Engine()
@@ -11,18 +12,16 @@ logger = Logger('main', 'main.log', console=True)
 email_notifier = EmailNotifier()
 sms_notifier = SmsNotifier()
 
+UnitOfWork.new_current()
+UnitOfWork.get_current().set_mapper_registry(MapperRegistry)
+
 routes = {}
 
 
 @AppRoute(routes=routes, url='/')
-class Index:
-    @Debug(name='Index')
-    def __call__(self, request):
-        print(request.get('date', None))
-        # context = {'date': request.get('date', None),
-        #            'objects_list': site.categories
-        #            }
-        return '200 OK', render('index.html', date=request.get('date', None), objects_list=site.categories)
+class Index(ListView):
+    template_name = 'index.html'
+    mapper_type = 'category'
 
 
 @AppRoute(routes=routes, url='/about/')
@@ -101,41 +100,24 @@ class CreateCourse:
 
 
 @AppRoute(routes=routes, url='/create-category/')
-class CreateCategory:
+class CreateCategory(CreateView):
+    template_name = 'create_category.html'
+    mapper_type = 'category'
 
-    @Debug(name='CreateCategory')
-    def __call__(self, request):
-
-        if request['method'] == 'POST':
-            print(request)
-            data = request['data']
-
-            name = data['name']
-            name = site.decode_value(name)
-
-            category_id = data.get('category_id')
-
-            category = None
-            if category_id:
-                category = site.find_category_by_id(int(category_id))
-
-            new_category = site.create_category(name, category)
-
-            site.categories.append(new_category)
-
-            return '200 OK', render('index.html', objects_list=site.categories)
-        else:
-            categories = site.categories
-            return '200 OK', render('create_category.html', categories=categories)
+    def create_obj(self, data: dict):
+        name = data['name']
+        name = site.decode_value(name)
+        # ic(name)
+        new_obj = site.create_category(name)
+        site.categories.append(new_obj)
+        new_obj.mark_new()
+        UnitOfWork.get_current().commit()
 
 
 @AppRoute(routes=routes, url='/category-list/')
-class CategoryList:
-
-    @Debug(name='CategoryList')
-    def __call__(self, request):
-        logger.info('Список категорий')
-        return '200 OK', render('category_list.html', objects_list=site.categories)
+class CategoryListView(ListView):
+    template_name = 'category_list.html'
+    mapper_type = 'category'
 
 
 @AppRoute(routes=routes, url='/copy-course/')
@@ -165,20 +147,45 @@ class CopyCourse:
 
 @AppRoute(routes=routes, url='/student-list/')
 class StudentListView(ListView):
-    queryset = site.students
     template_name = 'student_list.html'
+    mapper_type = 'student'
 
 
 @AppRoute(routes=routes, url='/create-student/')
 class StudentCreateView(CreateView):
     template_name = 'create_student.html'
+    mapper_type = 'student'
 
     def create_obj(self, data: dict):
         name = data['name']
         name = site.decode_value(name)
-        ic(name)
+        # ic(name)
         new_obj = site.create_user('student', name)
         site.students.append(new_obj)
+        new_obj.mark_new()
+        UnitOfWork.get_current().commit()
+
+
+@AppRoute(routes=routes, url='/update-student/')
+class StudentUpdateView(UpdateView):
+    template_name = 'update_student.html'
+    mapper_type = 'student'
+
+    def update_obj(self, data: dict):
+        name = data['name']
+        name = site.decode_value(name)
+        password = data['password']
+        password = site.decode_value(password)
+        obj = self.context['item']
+        obj.name = name
+        obj.password = password
+        ic(name, password)
+        obj.mark_dirty()
+        UnitOfWork.get_current().commit()
+
+    def get_obj_by_id(self, id):
+        obj = self.mapper.find_by_id(id)
+        self.context = {'item': obj}
 
 
 @AppRoute(routes=routes, url='/add-student/')
