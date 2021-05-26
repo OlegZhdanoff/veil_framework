@@ -14,8 +14,9 @@
     <div>
         <h1>Создание курса для категории "{{name}}"</h1>
         <form method="post">
+            <input type="hidden" name="id" value="{{id}}">
             <input type="text" name="name" placeholder="Название">
-            <button type="submit">Сохранить и вернуться к списку курсов</button>
+            <button type="submit">Добавить</button>
         </form>
     </div>
 {% endblock %}

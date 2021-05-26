@@ -5,8 +5,9 @@ import sqlite3
 from icecream import ic
 
 from patterns.architectural_system_pattern_unit_of_work import DomainObject
-# from patterns.behavioral_patterns import Subject
 from veil_framework.log.log_config import log_config
+
+CONNECTION = sqlite3.connect('patterns.sqlite')
 
 
 class Subject:
@@ -67,7 +68,7 @@ class UserFactory:
 
 
 # порождающий паттерн Прототип - Курс
-class CoursePrototype:
+class CoursePrototype(DomainObject):
 
     def clone(self):
         return copy.deepcopy(self)
@@ -75,35 +76,11 @@ class CoursePrototype:
 
 class Course(CoursePrototype, Subject):
 
-    def __init__(self, name, category):
+    def __init__(self, id='', name='name', category_id=1):
+        self.id = id
         self.name = name
-        self.category = category
-        self.category.courses.append(self)
-        self.students = []
-        self.teachers = []
-        self.methodists = []
+        self.category_id = category_id
         super().__init__()
-
-    def __getitem__(self, item):
-        return self.students[item]
-
-    def add_student(self, student: Student):
-        self.students.append(student)
-        student.courses.append(self)
-        self.notify(student)
-
-    def add_teacher(self, teacher: Teacher):
-        self.teachers.append(teacher)
-        teacher.courses.append(self)
-        self.notify(teacher)
-
-    def change_category(self, category):
-        try:
-            self.category.courses.remove(self)
-        except Exception:
-            pass
-        self.category = category
-        self.category.courses.append(self)
 
 
 # Интерактивный курс
@@ -125,21 +102,15 @@ class OfflineCourse(Course):
 
 
 class Category(DomainObject):
-    # auto_id = 0
 
-    def __init__(self, id='', name='', parent_id=''):
-        # self.id = Category.auto_id
+    def __init__(self, id='', name='name', parent_id=''):
         self.id = id
-        # Category.auto_id += 1
         self.name = name
         self.parent_id = parent_id
-        self.courses = []
 
     def course_count(self):
-        result = len(self.courses)
-        # if self.category:
-        #     result += self.category.course_count()
-        return result
+        mapper = MapperRegistry.get_current_mapper('course')
+        return mapper.count_by_field('category_id', self.id)
 
 
 # порождающий паттерн Абстрактная фабрика - фабрика курсов
@@ -257,9 +228,6 @@ class Logger(metaclass=SingletonByName):
         self.logger.exception(msg)
 
 
-CONNECTION = sqlite3.connect('patterns.sqlite')
-
-
 class Mapper:
 
     def __init__(self, obj=None, cls=None, connection=CONNECTION):
@@ -316,6 +284,20 @@ class Mapper:
         else:
             raise RecordNotFoundException(f'record with id={id} not found')
 
+    def find_by_field(self, field, value):
+        statement = f"SELECT * FROM {self.tablename} WHERE {field}=?"
+        self.cursor.execute(statement, (value,))
+        result = []
+        for item in self.cursor.fetchall():
+            self._create_obj(item)
+            result.append(self.obj)
+        return result
+
+    def count_by_field(self, field, value):
+        statement = f"SELECT COUNT(*) FROM {self.tablename} WHERE {field}=?"
+        self.cursor.execute(statement, (value,))
+        return self.cursor.fetchone()[0]
+
     def insert(self, obj):
         self._is_valid(obj)
         self.obj = obj
@@ -364,24 +346,20 @@ class Mapper:
             raise DbDeleteException(e.args)
 
 
-# connection = sqlite3.connect('patterns.sqlite')
-
-
 # архитектурный системный паттерн - Data Mapper
 class MapperRegistry:
     mappers = {
         'student': Mapper(cls=Student),
-        'category': Mapper(cls=Category)
+        'category': Mapper(cls=Category),
+        'course': Mapper(cls=Course)
     }
 
     @staticmethod
     def get_mapper(obj):
 
-        if isinstance(obj, (Student, Category)):
+        if isinstance(obj, (Student, Category, Course)):
 
             return Mapper(obj)
-        #if isinstance(obj, Category):
-            #return CategoryMapper(connection)
 
     @staticmethod
     def get_current_mapper(name: str):

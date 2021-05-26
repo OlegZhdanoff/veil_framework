@@ -46,6 +46,7 @@ class TemplateView:
     context = {}
     mapper_type = 'default'
     mapper = None
+    request = {}
 
     def get_context_data(self):
         return self.context
@@ -60,10 +61,12 @@ class TemplateView:
         # else:
         #     self.context = self.get_context_data()
         self.context = self.get_context_data()
-        return '200 OK', render(template_name, **self.context)
+        context = self.context if self.context else {}
+        return '200 OK', render(template_name, **context)
 
     def __call__(self, request):
         self.mapper = MapperRegistry.get_current_mapper(self.mapper_type)
+        self.request = request
         # ic(context)
         return self.render_template_with_context()
 
@@ -98,7 +101,13 @@ class CreateView(TemplateView):
     def create_obj(self, data):
         pass
 
-    def __call__(self, request):
+    def add_context(self):
+        pass
+
+    def __call__(self, request: dict):
+        self.context = request.get('request_params', self.context)
+        self.add_context()
+        ic(self.context)
         self.mapper = MapperRegistry.get_current_mapper(self.mapper_type)
         if request['method'] == 'POST':
             data = self.get_request_data(request)

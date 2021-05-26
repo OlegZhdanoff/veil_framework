@@ -4,7 +4,7 @@ from datetime import date
 from patterns.architectural_system_pattern_unit_of_work import UnitOfWork
 from patterns.behavioral_patterns import BaseSerializer, ListView, CreateView, EmailNotifier, SmsNotifier, UpdateView
 from veil_framework.templator import render
-from patterns.сreational_patterns import Engine, Logger, MapperRegistry, Student, Mapper
+from patterns.сreational_patterns import Engine, Logger, MapperRegistry, Student, Mapper, Course
 from patterns.structural_patterns import AppRoute, Debug
 
 site = Engine()
@@ -53,50 +53,35 @@ class StudyPrograms:
 
 
 @AppRoute(routes=routes, url='/courses-list/')
-class CoursesList:
-    @Debug(name='CoursesList')
-    def __call__(self, request):
-        logger.info('Список курсов')
-        try:
-            category = site.find_category_by_id(int(request['request_params']['id']))
-            return '200 OK', render('course_list.html',
-                                    objects_list=category.courses,
-                                    name=category.name,
-                                    id=category.id)
-        except KeyError:
-            return '200 OK', 'No courses have been added yet'
+class CoursesListView(ListView):
+    template_name = 'course_list.html'
+    mapper_type = 'course'
+
+    def get_queryset(self):
+        category_id = int(self.request['request_params']['id'])
+        return self.mapper.find_by_field('category_id', category_id)
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        category_id = int(self.request['request_params']['id'])
+        context['id'] = category_id
+        mapper = MapperRegistry.get_current_mapper('category')
+        context['category_name'] = mapper.find_by_id(category_id).name
+        return context
 
 
 @AppRoute(routes=routes, url='/create-course/')
-class CreateCourse:
-    category_id = -1
+class CreateCourse(CreateView):
+    template_name = 'create_course.html'
+    mapper_type = 'course'
 
-    @Debug(name='CreateCourse')
-    def __call__(self, request):
-        if request['method'] == 'POST':
-            data = request['data']
-
-            name = data['name']
-            name = site.decode_value(name)
-
-            category = None
-            if self.category_id != -1:
-                category = site.find_category_by_id(int(self.category_id))
-
-                course = site.create_course('record', name, category)
-                site.courses.append(course)
-
-            return '200 OK', render('course_list.html', objects_list=category.courses,
-                                    name=category.name, id=category.id)
-
-        else:
-            try:
-                self.category_id = int(request['request_params']['id'])
-                category = site.find_category_by_id(int(self.category_id))
-
-                return '200 OK', render('create_course.html', name=category.name, id=category.id)
-            except KeyError:
-                return '200 OK', 'No categories have been added yet'
+    def create_obj(self, data: dict):
+        name = data['name']
+        name = site.decode_value(name)
+        category_id = data['id']
+        new_obj = Course(name=name, category_id=category_id)
+        new_obj.mark_new()
+        UnitOfWork.get_current().commit()
 
 
 @AppRoute(routes=routes, url='/create-category/')
@@ -107,9 +92,7 @@ class CreateCategory(CreateView):
     def create_obj(self, data: dict):
         name = data['name']
         name = site.decode_value(name)
-        # ic(name)
         new_obj = site.create_category(name)
-        site.categories.append(new_obj)
         new_obj.mark_new()
         UnitOfWork.get_current().commit()
 
