@@ -4,7 +4,7 @@ from datetime import date
 from patterns.architectural_system_pattern_unit_of_work import UnitOfWork
 from patterns.behavioral_patterns import BaseSerializer, ListView, CreateView, EmailNotifier, SmsNotifier, UpdateView
 from veil_framework.templator import render
-from patterns.сreational_patterns import Engine, Logger, MapperRegistry, Student, Mapper, Course
+from patterns.сreational_patterns import Engine, Logger, MapperRegistry, Student, Mapper, Course, Category
 from patterns.structural_patterns import AppRoute, Debug
 
 site = Engine()
@@ -92,7 +92,8 @@ class CreateCategory(CreateView):
     def create_obj(self, data: dict):
         name = data['name']
         name = site.decode_value(name)
-        new_obj = site.create_category(name)
+        # new_obj = site.create_category(name)
+        new_obj = Category(name=name)
         new_obj.mark_new()
         UnitOfWork.get_current().commit()
 
@@ -111,18 +112,20 @@ class CopyCourse:
         request_params = request['request_params']
 
         try:
-            category = site.find_category_by_id(int(request_params['id']))
-            name = request_params['name']
-            old_course = site.get_course(name)
-            if old_course:
-                new_name = f'copy_{name}'
-                new_course = old_course.clone()
-                new_course.name = new_name
-                site.courses.append(new_course)
-                new_course.change_category(category)
+            item_id = int(request_params['item_id'])
+            cat_id = int(request_params['cat_id'])
+            cat_name = request_params['cat_name']
+            mapper = MapperRegistry.get_current_mapper('course')
+            old_course = mapper.find_by_id(item_id)
+            new_name = f'copy_{old_course.name}'
+            new_course = old_course.clone()
+            new_course.name = new_name
+            new_course.mark_new()
+            UnitOfWork.get_current().commit()
+            courses = mapper.find_by_field('category_id', cat_id)
 
-            return '200 OK', render('course_list.html', objects_list=category.courses, name=category.name,
-                                    id=category.id)
+            return '200 OK', render('course_list.html', objects_list=courses, category_name=cat_name,
+                                    id=cat_id)
 
         except KeyError:
             return '200 OK', 'No courses have been added yet'
@@ -143,8 +146,8 @@ class StudentCreateView(CreateView):
         name = data['name']
         name = site.decode_value(name)
         # ic(name)
-        new_obj = site.create_user('student', name)
-        site.students.append(new_obj)
+        new_obj = Student(name=name)
+        # site.students.append(new_obj)
         new_obj.mark_new()
         UnitOfWork.get_current().commit()
 
